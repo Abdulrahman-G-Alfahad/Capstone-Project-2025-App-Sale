@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import {
   StyleSheet,
   View,
@@ -7,16 +7,49 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  Animated,
+  Alert,
 } from "react-native";
-
+import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import UserContext from "../../context/UserContext";
+import { login } from "../../api/auth";
+import { useMutation } from "@tanstack/react-query";
+import { jwtDecode } from "jwt-decode";
 
 const Login = () => {
-  const [isFocused, setIsFocused] = useState({
-    username: false,
-    password: false,
+  const navigation = useNavigation();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const { setUser } = useContext(UserContext);
+
+  const userInfo = {
+    username: username,
+    password: password,
+  };
+
+  const { mutate } = useMutation({
+    mutationKey: ["login"],
+    mutationFn: () => login(userInfo),
+    onSuccess: (data) => {
+      console.log(data);
+      console.log(data.token);
+      setUser(true);
+      const decodedToken = jwtDecode(data.token);
+      console.log(decodedToken);
+    },
+    onError: () => {
+      Alert.alert(
+        "Login Failed",
+        "Please check your credentials and try again"
+      );
+    },
   });
+
+  const handleLogin = () => {
+    console.log("Login attempt with:", username, password);
+    mutate();
+  };
 
   return (
     <KeyboardAvoidingView
@@ -32,64 +65,41 @@ const Login = () => {
         <Text style={styles.subText}>Sign in to Continue</Text>
 
         <View style={styles.form}>
-          <View
-            style={[
-              styles.inputContainer,
-              isFocused.username && styles.inputContainerFocused,
-            ]}
-          >
-            <Ionicons
-              name="person-circle-outline"
-              size={24}
-              color="rgba(142, 139, 167, 0.6)"
-            />
+          <View style={styles.inputContainer}>
+            <Ionicons name="person-circle-outline" size={24} color="#8e8ba7" />
             <TextInput
               style={styles.input}
-              placeholder="Username"
-              placeholderTextColor="rgba(142, 139, 167, 0.6)"
+              placeholder="User Name"
+              placeholderTextColor="#8e8ba7"
+              value={username}
+              onChangeText={setUsername}
               autoCapitalize="none"
-              onFocus={() =>
-                setIsFocused((prev) => ({ ...prev, username: true }))
-              }
-              onBlur={() =>
-                setIsFocused((prev) => ({ ...prev, username: false }))
-              }
             />
           </View>
 
-          <View
-            style={[
-              styles.inputContainer,
-              isFocused.password && styles.inputContainerFocused,
-            ]}
-          >
-            <Ionicons
-              name="lock-closed-outline"
-              size={24}
-              color="rgba(142, 139, 167, 0.6)"
-            />
+          <View style={styles.inputContainer}>
+            <Ionicons name="lock-closed-outline" size={24} color="#8e8ba7" />
             <TextInput
               style={styles.input}
               placeholder="Password"
-              placeholderTextColor="rgba(142, 139, 167, 0.6)"
-              secureTextEntry={true}
-              onFocus={() =>
-                setIsFocused((prev) => ({ ...prev, password: true }))
-              }
-              onBlur={() =>
-                setIsFocused((prev) => ({ ...prev, password: false }))
-              }
+              placeholderTextColor="#8e8ba7"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
             />
-            <TouchableOpacity style={styles.eyeIcon}>
+            <TouchableOpacity
+              onPress={() => setShowPassword(!showPassword)}
+              style={styles.eyeIcon}
+            >
               <Ionicons
-                name="eye-off-outline"
+                name={showPassword ? "eye-outline" : "eye-off-outline"}
                 size={24}
-                color="rgba(142, 139, 167, 0.6)"
+                color="#8e8ba7"
               />
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity style={styles.loginButton} activeOpacity={0.8}>
+          <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
             <Text style={styles.buttonText}>Login</Text>
           </TouchableOpacity>
         </View>
@@ -108,114 +118,84 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     backgroundColor: "#141E30",
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(167, 139, 250, 0.15)",
+    borderBottomColor: "rgba(167, 139, 250, 0.2)",
     alignItems: "center",
     shadowColor: "#A78BFA",
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 2,
     },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 4,
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
   headerTitle: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: "800",
     color: "#E8F0FE",
-    letterSpacing: 0.8,
+    letterSpacing: 0.5,
   },
   content: {
     flex: 1,
     paddingHorizontal: 24,
-    paddingTop: 48,
+    paddingTop: 40,
     paddingBottom: 20,
-    justifyContent: "space-between",
   },
   welcomeText: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: "800",
     color: "#E8F0FE",
     textAlign: "center",
-    marginBottom: 12,
-    letterSpacing: 0.5,
+    marginBottom: 8,
   },
   subText: {
-    fontSize: 17,
+    fontSize: 16,
     color: "#A78BFA",
-    marginBottom: 40,
+    marginBottom: 48,
     textAlign: "center",
     fontWeight: "500",
-    letterSpacing: 0.3,
   },
   form: {
     width: "100%",
-    flex: 1,
-    justifyContent: "space-between",
   },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(142, 139, 167, 0.08)",
+    backgroundColor: "rgba(142, 139, 167, 0.1)",
     borderRadius: 16,
     paddingHorizontal: 16,
-    marginBottom: 24,
+    marginBottom: 20,
     height: 65,
-    borderWidth: 1,
-    borderColor: "rgba(167, 139, 250, 0.1)",
-    transition: "all 0.3s",
-  },
-  inputContainerFocused: {
-    backgroundColor: "rgba(142, 139, 167, 0.12)",
-    borderColor: "rgba(167, 139, 250, 0.3)",
-    shadowColor: "#A78BFA",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
   },
   input: {
     flex: 1,
     color: "#E8F0FE",
     paddingVertical: 16,
-    paddingHorizontal: 0,
-    marginLeft: 4,
+    marginLeft: 12,
     fontSize: 16,
-    letterSpacing: 0.3,
-    height: "100%",
-    alignItems: "center",
-    justifyContent: "center",
   },
   eyeIcon: {
     padding: 8,
-    marginLeft: -4,
   },
   loginButton: {
     backgroundColor: "#A78BFA",
     padding: 20,
     borderRadius: 16,
-    marginTop: "auto",
-    marginBottom: 32,
+    marginTop: 40,
     shadowColor: "#A78BFA",
     shadowOffset: {
       width: 0,
       height: 8,
     },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.2,
     shadowRadius: 24,
     elevation: 8,
-    borderWidth: 1,
-    borderColor: "rgba(167, 139, 250, 0.3)",
   },
   buttonText: {
     color: "#E8F0FE",
     fontSize: 18,
     fontWeight: "700",
     textAlign: "center",
-    letterSpacing: 0.5,
   },
   registerContainer: {
     flexDirection: "row",
