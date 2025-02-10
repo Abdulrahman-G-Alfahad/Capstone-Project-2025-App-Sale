@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -11,13 +11,77 @@ import {
   Dimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
+import { deleteToken } from "../../api/storage";
+import { jwtDecode } from "jwt-decode";
+import { getBusinessProfile, getProfile } from "../../api/auth";
+import { getToken } from "../../api/storage"; // Add this import
+import UserContext from "../../context/UserContext";
 
 const { width } = Dimensions.get("window");
 
 const Profile = () => {
+  // Add loading and error states
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const { setUser } = useContext(UserContext);
   const [businessName, setBusinessName] = useState("");
   const [branchName, setBranchName] = useState("");
   const [branchLocation, setBranchLocation] = useState("");
+
+  const navigation = useNavigation();
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchProfile = async () => {
+      // console.log("first");
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        // console.log("first");
+
+        const token = await getToken();
+        // console.log(token);
+        if (!token) throw new Error("No authentication token found");
+
+        const decodedToken = jwtDecode(token);
+        // console.log(decodedToken);
+        const id = decodedToken.userId;
+        // console.log(id);
+
+        const profile = await getProfile(id);
+        // console.log(profile.associate.address);
+        if (!profile) throw new Error("Failed to fetch profile");
+
+        const business = await getBusinessProfile(id);
+        // console.log(business.business.name);
+        if (!business) throw new Error("Failed to fetch business profile");
+
+        if (isMounted) {
+          setBusinessName(business.business.name);
+          setBranchName(profile.associate.fullName);
+          setBranchLocation(profile.associate.address);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err.message);
+          Alert.alert("Error", "Failed to load profile data");
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleLogout = () => {
     Alert.alert("Logout", "Are you sure you want to logout?", [
@@ -28,7 +92,8 @@ const Profile = () => {
       {
         text: "Logout",
         onPress: () => {
-          // Add your logout logic here
+          deleteToken();
+          setUser(false);
           console.log("User logged out");
         },
         style: "destructive",
@@ -53,6 +118,12 @@ const Profile = () => {
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+          >
+            <Ionicons name="chevron-back-outline" size={28} color="#A78BFA" />
+          </TouchableOpacity>
           <Text style={styles.headerTitle}>Branch Profile</Text>
         </View>
 
@@ -214,6 +285,12 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginLeft: 8,
     letterSpacing: 0.5,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
 

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   StyleSheet,
   View,
@@ -8,13 +8,93 @@ import {
   Platform,
   Animated,
   Keyboard,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Keypad from "../../components/Keypad";
+import FaceID from "../../components/FaceID";
+import { makeFaceIdPayment } from "../../api/transactions";
+import { useMutation } from "@tanstack/react-query";
+import { getBusinessProfile } from "../../api/auth";
+import { getToken } from "../../api/storage";
+import { jwtDecode } from "jwt-decode";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useNavigation } from "@react-navigation/native";
 
 const Dashboard = () => {
+  const navigation = useNavigation();
   const [amount, setAmount] = useState("");
   const [amountScale] = useState(new Animated.Value(1));
+  const [showFaceID, setShowFaceID] = useState(false);
+  const [faceId, setFaceId] = useState("");
+  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [receiver, setReceiver] = useState("");
+  const [associate, setAssociate] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  const formData = {
+    faceId: faceId,
+    amount: amount,
+    method: "FACEID",
+    receiverId: receiver,
+    associateId: associate,
+  };
+
+  // console.log(formData);
+
+  useEffect(() => {
+    const initializeData = async () => {
+      try {
+        // Check if data already exists
+        const storedData = await AsyncStorage.getItem("businessData");
+        if (storedData) {
+          const { receiverId, associateId } = JSON.parse(storedData);
+          setReceiver(receiverId);
+          setAssociate(associateId);
+          setIsInitialized(true);
+          return;
+        }
+
+        // If not stored, fetch and store
+        setIsLoading(true);
+        const token = await getToken();
+        const decodedToken = jwtDecode(token);
+        const userId = decodedToken.userId;
+
+        const business = await getBusinessProfile(userId);
+        const businessData = {
+          receiverId: business.business.id,
+          associateId: userId,
+        };
+
+        // Store data
+        await AsyncStorage.setItem(
+          "businessData",
+          JSON.stringify(businessData)
+        );
+
+        // Set state
+        setReceiver(businessData.receiverId);
+        setAssociate(businessData.associateId);
+        setIsInitialized(true);
+      } catch (error) {
+        console.error("Failed to initialize business data:", error);
+        Alert.alert(
+          "Error",
+          "Failed to load business profile. Please try again."
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (!isInitialized) {
+      initializeData();
+    }
+  }, [isInitialized]);
 
   const animateAmount = () => {
     Animated.sequence([
@@ -54,6 +134,42 @@ const Dashboard = () => {
     animateAmount();
   };
 
+  const { mutate } = useMutation({
+    mutationKey: ["faceIdPayment"],
+    mutationFn: () => makeFaceIdPayment(formData),
+    onSuccess: (data) => {
+      console.log(data);
+      Alert.alert("Success", "Payment completed successfully!", [
+        {
+          text: "Continue",
+        },
+      ]);
+    },
+    onError: () => {
+      Alert.alert("Error", "Payment failed. Please try again later.");
+    },
+  });
+
+  const handleFaceIDPress = () => {
+    setShowFaceID(true);
+  };
+
+  const handleFacePayment = () => {
+    console.log("Face payment initiated", faceId);
+    mutate();
+  };
+
+  const handleFaceIDSuccess = (data) => {
+    setFaceId(data.facialId);
+    setShowFaceID(false);
+    Alert.alert("Success", "Face enrollment completed successfully!", [
+      {
+        text: "Continue",
+        onPress: handleFacePayment,
+      },
+    ]);
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
@@ -64,7 +180,11 @@ const Dashboard = () => {
               <Text style={styles.logoBold}>F</Text>
               ace<Text style={styles.logoBold}>B</Text>ouk
             </Text>
-            <TouchableOpacity style={styles.profileIcon} activeOpacity={0.7}>
+            <TouchableOpacity
+              style={styles.profileIcon}
+              activeOpacity={0.7}
+              onPress={() => navigation.navigate("Profile")}
+            >
               <Ionicons name="person" size={20} color="#A78BFA" />
             </TouchableOpacity>
           </View>
@@ -106,6 +226,7 @@ const Dashboard = () => {
                 <TouchableOpacity
                   style={[styles.actionButton, styles.FaceIDScanButton]}
                   activeOpacity={0.8}
+                  onPress={handleFaceIDPress}
                 >
                   <View style={styles.actionButtonContent}>
                     <Ionicons name="scan-outline" size={24} color="#E8F0FE" />
@@ -131,6 +252,14 @@ const Dashboard = () => {
           </View>
         </View>
       </View>
+      <FaceID
+        isVisible={showFaceID}
+        onClose={() => setShowFaceID(false)}
+        onSuccess={handleFaceIDSuccess}
+        userData={{ email, username, fullName }}
+        mode="authenticate"
+        setFaceId={setFaceId}
+      />
     </SafeAreaView>
   );
 };
