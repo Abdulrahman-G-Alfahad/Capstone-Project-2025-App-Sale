@@ -3,7 +3,7 @@ import { getToken } from "./storage";
 
 const instance = axios.create({
   // baseURL: "http://192.168.2.75:8080",
-  baseURL: "http://192.168.86.26:8080",
+  baseURL: "http://192.168.2.132:8080",
 });
 instance.interceptors.request.use(async (config) => {
   const token = await getToken();
