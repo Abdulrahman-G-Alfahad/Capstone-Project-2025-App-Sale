@@ -12,4 +12,20 @@ const makeFaceIdPayment = async (formData) => {
   }
 };
 
-export { makeFaceIdPayment };
+const makeQRCodePayment = async (qrData) => {
+  //   console.log();
+  //   console.log(qrData, "QRCode Payment -------------------");
+  try {
+    const res = await instance.post("/transaction/business/qrcode", qrData);
+    console.log(res.status);
+    console.log(res.statusText);
+    console.log(res.data, "QRCode Payment -------------------");
+    return res.data;
+  } catch (error) {
+    console.log(error);
+    console.log(error);
+    throw error;
+  }
+};
+
+export { makeFaceIdPayment, makeQRCodePayment };
