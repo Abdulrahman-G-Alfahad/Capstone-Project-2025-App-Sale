@@ -11,7 +11,7 @@ import { WebView } from "react-native-webview";
 import { Camera } from "expo-camera";
 import { Ionicons } from "@expo/vector-icons";
 
-const FACEIO_PUBLIC_ID = "fioad748";
+const FACEIO_PUBLIC_ID = "fioa5917";
 
 const FaceID = ({
   isVisible,
@@ -59,6 +59,7 @@ const FaceID = ({
         } else {
           // Verify the authenticated user's payload
           const { facialId, payload } = message.data;
+          setFaceId(facialId);
           console.log("Authentication successful:", { facialId, payload });
         }
         onSuccess(message.data);

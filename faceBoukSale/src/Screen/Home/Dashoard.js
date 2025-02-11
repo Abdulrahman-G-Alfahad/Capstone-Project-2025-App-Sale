@@ -20,6 +20,7 @@ import { getToken } from "../../api/storage";
 import { jwtDecode } from "jwt-decode";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
+import QRCode from "../../components/QRCode";
 
 const Dashboard = () => {
   const navigation = useNavigation();
@@ -34,6 +35,7 @@ const Dashboard = () => {
   const [associate, setAssociate] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [showQRCode, setShowQRCode] = useState(false);
 
   const formData = {
     faceId: faceId,
@@ -111,6 +113,12 @@ const Dashboard = () => {
     ]).start();
   };
 
+  const handleQRCodeSuccess = (data) => {
+    setReceiver(data.receiverId);
+    setAssociate(data.associateId);
+    // Handle additional logic as needed
+  };
+
   const handleNumberPress = (num) => {
     if (amount.includes(".") && amount.split(".")[1]?.length >= 3) return;
     setAmount((prev) => prev + num);
@@ -138,7 +146,7 @@ const Dashboard = () => {
     mutationKey: ["faceIdPayment"],
     mutationFn: () => makeFaceIdPayment(formData),
     onSuccess: (data) => {
-      console.log(data);
+      // console.log(data);
       Alert.alert("Success", "Payment completed successfully!", [
         {
           text: "Continue",
@@ -237,6 +245,7 @@ const Dashboard = () => {
                 <TouchableOpacity
                   style={[styles.actionButton, styles.QRCodeScanButton]}
                   activeOpacity={0.8}
+                  onPress={() => setShowQRCode(true)}
                 >
                   <View style={styles.actionButtonContent}>
                     <Ionicons
@@ -259,6 +268,11 @@ const Dashboard = () => {
         userData={{ email, username, fullName }}
         mode="authenticate"
         setFaceId={setFaceId}
+      />
+      <QRCode
+        isVisible={showQRCode}
+        onClose={() => setShowQRCode(false)}
+        onSuccess={handleQRCodeSuccess}
       />
     </SafeAreaView>
   );
