@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   StyleSheet,
   View,
@@ -13,7 +13,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import Keypad from "../../components/Keypad";
 import FaceID from "../../components/FaceID";
-import { makeFaceIdPayment } from "../../api/transactions";
+import { makeFaceIdPayment, makeQRCodePayment } from "../../api/transactions";
 import { useMutation } from "@tanstack/react-query";
 import { getBusinessProfile } from "../../api/auth";
 import { getToken } from "../../api/storage";
@@ -36,14 +36,42 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [showQRCode, setShowQRCode] = useState(false);
+  const [sender, setSender] = useState("");
 
-  const formData = {
-    faceId: faceId,
-    amount: amount,
-    method: "FACEID",
-    receiverId: receiver,
-    associateId: associate,
-  };
+  const formData = useMemo(
+    () => ({
+      faceId: faceId,
+      amount: amount,
+      method: "FACEID",
+      receiverId: receiver,
+      associateId: associate,
+    }),
+    [faceId, amount, receiver, associate]
+  );
+
+  const qrData = useMemo(
+    () => ({
+      senderId: sender,
+      receiverId: receiver,
+      amount: amount,
+      method: "BARCODE",
+      associateId: associate,
+    }),
+    [sender, receiver, amount, associate]
+  );
+
+  // Add validation hook
+  useEffect(() => {
+    if (formData.receiverId && formData.associateId) {
+      console.log("Form Data Updated:", formData);
+    }
+  }, [formData]);
+
+  useEffect(() => {
+    if (qrData.receiverId && qrData.associateId) {
+      console.log("QR Data Updated:", qrData);
+    }
+  }, [qrData]);
 
   // console.log(formData);
 
@@ -114,8 +142,10 @@ const Dashboard = () => {
   };
 
   const handleQRCodeSuccess = (data) => {
-    setReceiver(data.receiverId);
-    setAssociate(data.associateId);
+    console.log(data.amount, "<------------");
+    setSender(data.userId);
+    setAmount(data.amount);
+    makeQRPayment.mutate(qrData);
     // Handle additional logic as needed
   };
 
@@ -147,6 +177,22 @@ const Dashboard = () => {
     mutationFn: () => makeFaceIdPayment(formData),
     onSuccess: (data) => {
       // console.log(data);
+      Alert.alert("Success", "Payment completed successfully!", [
+        {
+          text: "Continue",
+        },
+      ]);
+    },
+    onError: () => {
+      Alert.alert("Error", "Payment failed. Please try again later.");
+    },
+  });
+
+  const makeQRPayment = useMutation({
+    mutationKey: ["qrPayment"],
+    mutationFn: () => makeQRCodePayment(qrData),
+    onSuccess: (data) => {
+      console.log(data);
       Alert.alert("Success", "Payment completed successfully!", [
         {
           text: "Continue",
