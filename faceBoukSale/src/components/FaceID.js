@@ -62,9 +62,10 @@ const FaceID = ({
           setFaceId(facialId);
           console.log("Authentication successful:", { facialId, payload });
         }
+        // Just close and call onSuccess without showing a modal
         onSuccess(message.data);
         onClose();
-      } else if (message.type === "error") {
+      } else {
         console.log("FaceIO error:", message.error);
 
         if (message.code === 2 && mode === "enroll") {
