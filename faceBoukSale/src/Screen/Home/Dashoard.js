@@ -37,12 +37,16 @@ const Dashboard = () => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [showQRCode, setShowQRCode] = useState(false);
   const [sender, setSender] = useState("");
+
   const [statusModal, setStatusModal] = useState({
     visible: false,
     type: "success",
     title: "",
     message: "",
   });
+
+  const [qrAmount, setQrAmount] = useState("");
+
 
   const formData = useMemo(
     () => ({
@@ -59,17 +63,17 @@ const Dashboard = () => {
     () => ({
       senderId: sender,
       receiverId: receiver,
-      amount: amount,
+      amount: qrAmount, // Use qrAmount instead of amount
       method: "BARCODE",
       associateId: associate,
     }),
-    [sender, receiver, amount, associate]
+    [sender, receiver, qrAmount, associate] // Update dependency array
   );
 
   // Add validation hook
   useEffect(() => {
     if (formData.receiverId && formData.associateId) {
-      console.log("Form Data Updated:", formData);
+      // console.log("Form Data Updated:", formData);
     }
   }, [formData]);
 
@@ -132,6 +136,53 @@ const Dashboard = () => {
     }
   }, [isInitialized]);
 
+
+  const animateAmount = () => {
+    Animated.sequence([
+      Animated.timing(amountScale, {
+        toValue: 1.05,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(amountScale, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const handleQRCodeSuccess = (data) => {
+    try {
+      if (!data.amount || parseFloat(data.amount) <= 0) {
+        throw new Error("Invalid amount in QR code");
+      }
+
+      setQrAmount(data.amount); // Set QR amount from scanned data
+
+      const paymentData = {
+        senderId: data.userId,
+        receiverId: receiver,
+        amount: data.amount, // Use amount from QR code
+        method: "BARCODE",
+        associateId: associate,
+      };
+
+      if (
+        !paymentData.senderId ||
+        !paymentData.receiverId ||
+        !paymentData.associateId
+      ) {
+        throw new Error("Missing payment information");
+      }
+
+      makeQRPayment(paymentData);
+    } catch (error) {
+      Alert.alert("Error", error.message);
+    }
+  };
+
+
   const handleNumberPress = (num) => {
     if (amount.includes(".") && amount.split(".")[1]?.length >= 3) return;
     setAmount((prev) => prev + num);
@@ -173,10 +224,11 @@ const Dashboard = () => {
     },
   });
 
-  const makeQRPayment = useMutation({
+  const { mutate: makeQRPayment } = useMutation({
     mutationKey: ["qrPayment"],
-    mutationFn: () => makeQRCodePayment(qrData),
+    mutationFn: (paymentData) => makeQRCodePayment(paymentData),
     onSuccess: (data) => {
+
       console.log(data);
       setStatusModal({
         visible: true,
@@ -193,6 +245,21 @@ const Dashboard = () => {
         title: "Error",
         message: "Payment failed. Please try again later.",
       });
+
+      console.log("QR Payment Success:", data);
+      setQrAmount(""); // Clear QR amount
+      setSender("");
+      setShowQRCode(false);
+      Alert.alert("Success", "Payment completed successfully!");
+    },
+    onError: (error) => {
+      console.error("QR Payment Error:", error);
+      setQrAmount(""); // Clear QR amount on error
+      Alert.alert(
+        "Payment Failed",
+        error.response?.data?.message || "Please try again"
+      );
+
     },
   });
 
