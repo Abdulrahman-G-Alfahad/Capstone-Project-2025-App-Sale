@@ -150,12 +150,15 @@ const Dashboard = () => {
         throw new Error("Invalid amount in QR code");
       }
 
-      setQrAmount(data.amount); // Set QR amount from scanned data
+      console.log(data.amount, "<------------");
+      setSender(data.userId);
+      setQrAmount(data.amount);
+      setAmount(data.amount);
 
       const paymentData = {
         senderId: data.userId,
         receiverId: receiver,
-        amount: data.amount, // Use amount from QR code
+        amount: data.amount,
         method: "BARCODE",
         associateId: associate,
       };
@@ -168,7 +171,7 @@ const Dashboard = () => {
         throw new Error("Missing payment information");
       }
 
-      makeQRPayment(paymentData);
+      makeQRPayment.mutate(qrData);
     } catch (error) {
       Alert.alert("Error", error.message);
     }
@@ -217,6 +220,24 @@ const Dashboard = () => {
     mutationKey: ["qrPayment"],
     mutationFn: (paymentData) => makeQRCodePayment(paymentData),
     onSuccess: (data) => {
+
+      console.log(data);
+      setStatusModal({
+        visible: true,
+        type: "success",
+        title: "Congrats!",
+        message: "Money Transfered Successfully",
+      });
+      handleClearPress(); // Reset amount after successful payment
+    },
+    onError: () => {
+      setStatusModal({
+        visible: true,
+        type: "error",
+        title: "Error",
+        message: "Payment failed. Please try again later.",
+      });
+
       console.log("QR Payment Success:", data);
       setQrAmount(""); // Clear QR amount
       setSender("");
@@ -245,6 +266,17 @@ const Dashboard = () => {
   const handleFaceIDSuccess = (data) => {
     setFaceId(data.facialId);
     setShowFaceID(false);
+
+    handleFacePayment();
+  };
+
+  const handleModalClose = () => {
+    const callback = statusModal.onClose;
+    setStatusModal((prev) => ({ ...prev, visible: false, onClose: undefined }));
+    if (callback) {
+      callback();
+    }
+
     Alert.alert("Success", "Face enrollment completed successfully!", [
       {
         text: "Continue",
