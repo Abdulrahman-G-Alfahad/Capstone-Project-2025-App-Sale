@@ -47,7 +47,6 @@ const Dashboard = () => {
 
   const [qrAmount, setQrAmount] = useState("");
 
-
   const formData = useMemo(
     () => ({
       faceId: faceId,
@@ -136,7 +135,6 @@ const Dashboard = () => {
     }
   }, [isInitialized]);
 
-
   const animateAmount = () => {
     Animated.sequence([
       Animated.timing(amountScale, {
@@ -158,12 +156,15 @@ const Dashboard = () => {
         throw new Error("Invalid amount in QR code");
       }
 
-      setQrAmount(data.amount); // Set QR amount from scanned data
+      console.log(data.amount, "<------------");
+      setSender(data.userId);
+      setQrAmount(data.amount);
+      setAmount(data.amount);
 
       const paymentData = {
         senderId: data.userId,
         receiverId: receiver,
-        amount: data.amount, // Use amount from QR code
+        amount: data.amount,
         method: "BARCODE",
         associateId: associate,
       };
@@ -176,12 +177,11 @@ const Dashboard = () => {
         throw new Error("Missing payment information");
       }
 
-      makeQRPayment(paymentData);
+      makeQRPayment.mutate(qrData);
     } catch (error) {
       Alert.alert("Error", error.message);
     }
   };
-
 
   const handleNumberPress = (num) => {
     if (amount.includes(".") && amount.split(".")[1]?.length >= 3) return;
@@ -228,7 +228,6 @@ const Dashboard = () => {
     mutationKey: ["qrPayment"],
     mutationFn: (paymentData) => makeQRCodePayment(paymentData),
     onSuccess: (data) => {
-
       console.log(data);
       setStatusModal({
         visible: true,
@@ -259,7 +258,6 @@ const Dashboard = () => {
         "Payment Failed",
         error.response?.data?.message || "Please try again"
       );
-
     },
   });
 
@@ -286,14 +284,6 @@ const Dashboard = () => {
     if (callback) {
       callback();
     }
-  };
-
-  const handleQRCodeSuccess = (data) => {
-    console.log(data.amount, "<------------");
-    setSender(data.userId);
-    setAmount(data.amount);
-    makeQRPayment.mutate(qrData);
-    // Handle additional logic as needed
   };
 
   return (
