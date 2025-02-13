@@ -4,14 +4,12 @@ import {
   Text,
   Modal,
   StyleSheet,
-  Dimensions,
   TouchableOpacity,
   Animated,
+  Easing,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-
-const { width } = Dimensions.get("window");
 
 const StatusModal = ({
   visible,
@@ -22,9 +20,20 @@ const StatusModal = ({
 }) => {
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
+  const checkAnim = useRef(new Animated.Value(0)).current;
+  const dot1Anim = useRef(new Animated.Value(0)).current;
+  const dot2Anim = useRef(new Animated.Value(0)).current;
+  const dot3Anim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (visible) {
+      // Reset animations
+      checkAnim.setValue(0);
+      dot1Anim.setValue(0);
+      dot2Anim.setValue(0);
+      dot3Anim.setValue(0);
+
+      // Main modal animation
       Animated.parallel([
         Animated.spring(scaleAnim, {
           toValue: 1,
@@ -37,7 +46,39 @@ const StatusModal = ({
           duration: 200,
           useNativeDriver: true,
         }),
-      ]).start();
+      ]).start(() => {
+        // After modal appears, animate check and dots
+        Animated.sequence([
+          // Check mark animation
+          Animated.timing(checkAnim, {
+            toValue: 1,
+            duration: 400,
+            easing: Easing.bezier(0.4, 0, 0.2, 1),
+            useNativeDriver: true,
+          }),
+          // Dots animation sequence
+          Animated.stagger(150, [
+            Animated.spring(dot1Anim, {
+              toValue: 1,
+              tension: 50,
+              friction: 7,
+              useNativeDriver: true,
+            }),
+            Animated.spring(dot2Anim, {
+              toValue: 1,
+              tension: 50,
+              friction: 7,
+              useNativeDriver: true,
+            }),
+            Animated.spring(dot3Anim, {
+              toValue: 1,
+              tension: 50,
+              friction: 7,
+              useNativeDriver: true,
+            }),
+          ]),
+        ]).start();
+      });
     } else {
       Animated.parallel([
         Animated.spring(scaleAnim, {
@@ -60,31 +101,9 @@ const StatusModal = ({
       case "success":
         return "check-bold";
       case "error":
-        return "close";
+        return "close-thick";
       default:
         return "check-bold";
-    }
-  };
-
-  const getIconColor = () => {
-    switch (type) {
-      case "success":
-        return "#FFFFFF";
-      case "error":
-        return "#FFFFFF";
-      default:
-        return "#FFFFFF";
-    }
-  };
-
-  const getBackgroundColor = () => {
-    switch (type) {
-      case "success":
-        return "#9D7BEF";
-      case "error":
-        return "#FF5252";
-      default:
-        return "#9D7BEF";
     }
   };
 
@@ -101,48 +120,111 @@ const StatusModal = ({
           ]}
         >
           <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Ionicons name="close" size={28} color="#9991b1" />
+            <Ionicons name="close" size={20} color="rgba(153, 145, 177, 0.4)" />
           </TouchableOpacity>
 
           <View style={styles.iconWrapper}>
             <View style={styles.hueCircle} />
-            <View style={styles.decorativeDots}>
-              <View style={[styles.dot, styles.dot1]} />
-              <View style={[styles.dot, styles.dot2]} />
-              <View style={[styles.dot, styles.dot3]} />
-            </View>
-            <View
+            <Animated.View
+              style={[
+                styles.dot1,
+                {
+                  opacity: dot1Anim,
+                  transform: [
+                    { scale: dot1Anim },
+                    {
+                      translateY: dot1Anim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [10, 0],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            />
+            <Animated.View
+              style={[
+                styles.dot2,
+                {
+                  opacity: dot2Anim,
+                  transform: [
+                    { scale: dot2Anim },
+                    {
+                      translateY: dot2Anim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [10, 0],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            />
+            <Animated.View
+              style={[
+                styles.dot3,
+                {
+                  opacity: dot3Anim,
+                  transform: [
+                    { scale: dot3Anim },
+                    {
+                      translateY: dot3Anim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [10, 0],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            />
+            <Animated.View
               style={[
                 styles.iconContainer,
-                { backgroundColor: getBackgroundColor() },
+                {
+                  transform: [
+                    {
+                      scale: checkAnim.interpolate({
+                        inputRange: [0, 0.5, 1],
+                        outputRange: [0.5, 1.2, 1],
+                      }),
+                    },
+                  ],
+                },
               ]}
             >
-              <MaterialCommunityIcons
-                name={getIconName()}
-                size={65}
-                color={getIconColor()}
-                style={styles.icon}
-              />
-            </View>
+              <Animated.View
+                style={{
+                  opacity: checkAnim,
+                  transform: [
+                    {
+                      scale: checkAnim.interpolate({
+                        inputRange: [0, 0.5, 1],
+                        outputRange: [0, 1.2, 1],
+                      }),
+                    },
+                  ],
+                }}
+              >
+                <MaterialCommunityIcons
+                  name={getIconName()}
+                  size={42}
+                  color="#FFFFFF"
+                />
+              </Animated.View>
+            </Animated.View>
           </View>
 
-          <View style={styles.modalContent}>
-            <Text style={styles.title}>{title || "Success!"}</Text>
-            <Text style={styles.message}>
-              {message || "Money Transfered Successfully"}
-            </Text>
+          <Text style={styles.title}>{title || "Success"}</Text>
+          <Text style={styles.message}>
+            {message || "Face enrollment completed successfully!"}
+          </Text>
 
-            <TouchableOpacity
-              style={[
-                styles.modalButton,
-                { backgroundColor: getBackgroundColor() },
-              ]}
-              onPress={onClose}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.modalButtonText}>Done</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={styles.modalButton}
+            onPress={onClose}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.modalButtonText}>Done</Text>
+          </TouchableOpacity>
         </Animated.View>
       </View>
     </Modal>
@@ -152,103 +234,26 @@ const StatusModal = ({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(20, 30, 48, 0.95)",
+    backgroundColor: "rgba(20, 30, 48, 0.98)",
     justifyContent: "center",
     alignItems: "center",
   },
   modalView: {
     backgroundColor: "#1A2942",
     borderRadius: 24,
-    padding: 32,
-    width: "90%",
-    maxWidth: 400,
+    padding: 20,
+    width: "75%",
+    maxWidth: 320,
     alignItems: "center",
     shadowColor: "#9D7BEF",
     shadowOffset: {
       width: 0,
-      height: 8,
+      height: 0,
     },
     shadowOpacity: 0.2,
-    shadowRadius: 24,
-    elevation: 16,
+    shadowRadius: 20,
     borderWidth: 1,
-    borderColor: "rgba(157, 123, 239, 0.2)",
-    position: "relative",
-  },
-  modalContent: {
-    width: "100%",
-    alignItems: "center",
-  },
-  iconWrapper: {
-    position: "relative",
-    width: 200,
-    height: 200,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  hueCircle: {
-    position: "absolute",
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    backgroundColor: "rgba(157, 123, 239, 0.12)",
-    transform: [{ scale: 1 }],
-  },
-  decorativeDots: {
-    position: "absolute",
-    width: "100%",
-    height: "100%",
-  },
-  dot: {
-    position: "absolute",
-    backgroundColor: "#2C8C7D",
-  },
-  dot1: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    top: 0,
-    left: "50%",
-    marginLeft: -5,
-    opacity: 0.3,
-  },
-  dot2: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    bottom: "25%",
-    right: 0,
-    opacity: 0.5,
-  },
-  dot3: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    bottom: "25%",
-    left: 0,
-    opacity: 0.2,
-  },
-  iconContainer: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#9D7BEF",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 5.46,
-    elevation: 9,
-    zIndex: 1,
-  },
-  icon: {
-    marginLeft: 0,
-    marginTop: 0,
-    transform: [{ scale: 1.4 }],
+    borderColor: "rgba(157, 123, 239, 0.12)",
   },
   closeButton: {
     position: "absolute",
@@ -257,38 +262,89 @@ const styles = StyleSheet.create({
     padding: 8,
     zIndex: 1,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: "800",
-    color: "#E8F0FE",
-    marginBottom: 12,
-    textAlign: "center",
-    letterSpacing: 0.5,
+  iconWrapper: {
+    position: "relative",
+    width: 240,
+    height: 240,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 16,
+    marginBottom: 16,
   },
-  message: {
-    fontSize: 16,
-    color: "#8e8ba7",
-    marginBottom: 32,
-    textAlign: "center",
-    lineHeight: 22,
+  hueCircle: {
+    position: "absolute",
+    width: 130,
+    height: 130,
+    borderRadius: 65,
+    backgroundColor: "rgba(157, 123, 239, 0.12)",
   },
-  modalButton: {
-    width: "100%",
-    padding: 18,
-    borderRadius: 16,
+  dot1: {
+    position: "absolute",
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: "rgba(46, 196, 182, 0.25)",
+    top: 15,
+    right: 45,
+  },
+  dot2: {
+    position: "absolute",
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "rgba(46, 196, 182, 0.4)",
+    bottom: 35,
+    left: 40,
+  },
+  dot3: {
+    position: "absolute",
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: "rgba(46, 196, 182, 0.3)",
+    bottom: 70,
+    right: 30,
+  },
+  iconContainer: {
+    width: 85,
+    height: 85,
+    borderRadius: 42.5,
+    backgroundColor: "#9D7BEF",
+    justifyContent: "center",
+    alignItems: "center",
     shadowColor: "#9D7BEF",
     shadowOffset: {
       width: 0,
       height: 4,
     },
     shadowOpacity: 0.3,
-    shadowRadius: 5.46,
-    elevation: 9,
+    shadowRadius: 8,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "600",
+    color: "#FFFFFF",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  message: {
+    fontSize: 15,
+    color: "rgba(142, 139, 167, 0.7)",
+    marginBottom: 24,
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  modalButton: {
+    width: "100%",
+    padding: 15,
+    backgroundColor: "#9D7BEF",
+    borderRadius: 30,
+    marginTop: 4,
   },
   modalButtonText: {
-    color: "#E8F0FE",
-    fontSize: 18,
-    fontWeight: "700",
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "500",
     textAlign: "center",
   },
 });

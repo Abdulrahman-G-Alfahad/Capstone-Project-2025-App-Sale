@@ -39,6 +39,17 @@ const Dashboard = () => {
   const [sender, setSender] = useState("");
   const [qrAmount, setQrAmount] = useState("");
 
+<<<<<<< HEAD
+  const [statusModal, setStatusModal] = useState({
+    visible: false,
+    type: "success",
+    title: "",
+    message: "",
+    onClose: undefined,
+  });
+
+=======
+>>>>>>> main
   const formData = useMemo(
     () => ({
       faceId: faceId,
@@ -203,6 +214,33 @@ const Dashboard = () => {
   const { mutate } = useMutation({
     mutationKey: ["faceIdPayment"],
     mutationFn: () => makeFaceIdPayment(formData),
+<<<<<<< HEAD
+    onSuccess: () => {
+      setStatusModal({
+        visible: true,
+        type: "success",
+        title: "Success!",
+        message: "Payment completed successfully",
+        onClose: () => {
+          handleClearPress();
+          setFaceId("");
+        },
+      });
+    },
+    onError: (error) => {
+      setStatusModal({
+        visible: true,
+        type: "error",
+        title: "Error",
+        message:
+          error.response?.data?.message ||
+          "Payment failed. Please try again later.",
+        onClose: () => {
+          handleClearPress();
+          setFaceId("");
+        },
+      });
+=======
     onSuccess: (data) => {
       // console.log(data);
       Alert.alert("Success", "Payment completed successfully!", [
@@ -213,48 +251,56 @@ const Dashboard = () => {
     },
     onError: () => {
       Alert.alert("Error", "Payment failed. Please try again later.");
+>>>>>>> main
     },
   });
 
   const { mutate: makeQRPayment } = useMutation({
     mutationKey: ["qrPayment"],
     mutationFn: (paymentData) => makeQRCodePayment(paymentData),
+<<<<<<< HEAD
+    onSuccess: () => {
+=======
     onSuccess: (data) => {
 
       console.log(data);
+>>>>>>> main
       setStatusModal({
         visible: true,
         type: "success",
-        title: "Congrats!",
-        message: "Money Transfered Successfully",
+        title: "Success!",
+        message: "QR Code payment completed successfully",
+        onClose: () => {
+          setQrAmount("");
+          setSender("");
+          setShowQRCode(false);
+          handleClearPress();
+        },
       });
-      handleClearPress(); // Reset amount after successful payment
     },
-    onError: () => {
+    onError: (error) => {
       setStatusModal({
         visible: true,
         type: "error",
         title: "Error",
-        message: "Payment failed. Please try again later.",
+        message:
+          error.response?.data?.message ||
+          "QR Code payment failed. Please try again.",
+        onClose: () => {
+          setQrAmount("");
+          setSender("");
+          setShowQRCode(false);
+          handleClearPress();
+        },
       });
-
-      console.log("QR Payment Success:", data);
-      setQrAmount(""); // Clear QR amount
-      setSender("");
-      setShowQRCode(false);
-      Alert.alert("Success", "Payment completed successfully!");
-    },
-    onError: (error) => {
-      console.error("QR Payment Error:", error);
-      setQrAmount(""); // Clear QR amount on error
-      Alert.alert(
-        "Payment Failed",
-        error.response?.data?.message || "Please try again"
-      );
     },
   });
 
   const handleFaceIDPress = () => {
+    if (!amount || parseFloat(amount) <= 0) {
+      Alert.alert("Error", "Please enter a valid amount");
+      return;
+    }
     setShowFaceID(true);
   };
 
@@ -267,12 +313,33 @@ const Dashboard = () => {
     setFaceId(data.facialId);
     setShowFaceID(false);
 
+<<<<<<< HEAD
+    // Add a slight delay to ensure the FaceID modal is closed before showing the status modal
+    setTimeout(() => {
+      setStatusModal({
+        visible: true,
+        type: "success",
+        title: "Face Scan Complete",
+        message: "Processing payment...",
+      });
+
+      // Add a slight delay before initiating the payment
+      setTimeout(() => {
+        handleFacePayment();
+      }, 500);
+    }, 300);
+=======
     handleFacePayment();
+>>>>>>> main
   };
 
   const handleModalClose = () => {
     const callback = statusModal.onClose;
-    setStatusModal((prev) => ({ ...prev, visible: false, onClose: undefined }));
+    setStatusModal((prev) => ({
+      ...prev,
+      visible: false,
+      onClose: undefined,
+    }));
     if (callback) {
       callback();
     }
