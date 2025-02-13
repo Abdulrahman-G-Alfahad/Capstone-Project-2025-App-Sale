@@ -37,13 +37,13 @@ const StatusModal = ({
       Animated.parallel([
         Animated.spring(scaleAnim, {
           toValue: 1,
-          tension: 50,
-          friction: 7,
+          tension: 80,
+          friction: 6,
           useNativeDriver: true,
         }),
         Animated.timing(opacityAnim, {
           toValue: 1,
-          duration: 200,
+          duration: 150,
           useNativeDriver: true,
         }),
       ]).start(() => {
@@ -52,28 +52,28 @@ const StatusModal = ({
           // Check mark animation
           Animated.timing(checkAnim, {
             toValue: 1,
-            duration: 400,
+            duration: 250,
             easing: Easing.bezier(0.4, 0, 0.2, 1),
             useNativeDriver: true,
           }),
           // Dots animation sequence
-          Animated.stagger(150, [
+          Animated.stagger(80, [
             Animated.spring(dot1Anim, {
               toValue: 1,
-              tension: 50,
-              friction: 7,
+              tension: 80,
+              friction: 6,
               useNativeDriver: true,
             }),
             Animated.spring(dot2Anim, {
               toValue: 1,
-              tension: 50,
-              friction: 7,
+              tension: 80,
+              friction: 6,
               useNativeDriver: true,
             }),
             Animated.spring(dot3Anim, {
               toValue: 1,
-              tension: 50,
-              friction: 7,
+              tension: 80,
+              friction: 6,
               useNativeDriver: true,
             }),
           ]),
@@ -83,13 +83,13 @@ const StatusModal = ({
       Animated.parallel([
         Animated.spring(scaleAnim, {
           toValue: 0,
-          tension: 50,
-          friction: 7,
+          tension: 80,
+          friction: 6,
           useNativeDriver: true,
         }),
         Animated.timing(opacityAnim, {
           toValue: 0,
-          duration: 200,
+          duration: 150,
           useNativeDriver: true,
         }),
       ]).start();
