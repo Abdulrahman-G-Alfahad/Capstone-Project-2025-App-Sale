@@ -6,7 +6,6 @@ import {
   SafeAreaView,
   TouchableOpacity,
   Platform,
-  Animated,
   Keyboard,
   Alert,
 } from "react-native";
@@ -21,11 +20,11 @@ import { jwtDecode } from "jwt-decode";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import QRCode from "../../components/QRCode";
+import StatusModal from "../../components/StatusModal";
 
 const Dashboard = () => {
   const navigation = useNavigation();
   const [amount, setAmount] = useState("");
-  const [amountScale] = useState(new Animated.Value(1));
   const [showFaceID, setShowFaceID] = useState(false);
   const [faceId, setFaceId] = useState("");
   const [email, setEmail] = useState("");
@@ -38,6 +37,16 @@ const Dashboard = () => {
   const [showQRCode, setShowQRCode] = useState(false);
   const [sender, setSender] = useState("");
   const [qrAmount, setQrAmount] = useState("");
+
+  console.log("faceId", faceId);
+
+  const [statusModal, setStatusModal] = useState({
+    visible: false,
+    type: "success",
+    title: "",
+    message: "",
+    onClose: undefined,
+  });
 
   const formData = useMemo(
     () => ({
@@ -150,7 +159,7 @@ const Dashboard = () => {
         throw new Error("Invalid amount in QR code");
       }
 
-      // console.log(data.amount, "<------------");
+      console.log(data.amount, "<------------");
       setSender(data.userId);
       setQrAmount(data.amount);
       setAmount(data.amount);
@@ -159,7 +168,7 @@ const Dashboard = () => {
         senderId: data.userId,
         receiverId: receiver,
         amount: data.amount,
-        method: "QR",
+        method: "BARCODE",
         associateId: associate,
       };
 
@@ -180,39 +189,52 @@ const Dashboard = () => {
   const handleNumberPress = (num) => {
     if (amount.includes(".") && amount.split(".")[1]?.length >= 3) return;
     setAmount((prev) => prev + num);
-    animateAmount();
   };
 
   const handleDecimalPress = () => {
     if (!amount.includes(".")) {
       setAmount((prev) => (prev === "" ? "0." : prev + "."));
-      animateAmount();
     }
   };
 
   const handleDeletePress = () => {
     setAmount((prev) => prev.slice(0, -1));
-    animateAmount();
   };
 
   const handleClearPress = () => {
     setAmount("");
-    animateAmount();
   };
 
   const { mutate } = useMutation({
     mutationKey: ["faceIdPayment"],
     mutationFn: () => makeFaceIdPayment(formData),
     onSuccess: (data) => {
-      // console.log(data);
-      Alert.alert("Success", "Payment completed successfully!", [
-        {
-          text: "Continue",
+      console.log("Face payment success:", data);
+      setStatusModal({
+        visible: true,
+        type: "success",
+        title: "Success!",
+        message: "Payment completed successfully",
+        onClose: () => {
+          handleClearPress();
+          setFaceId("");
         },
-      ]);
+      });
     },
-    onError: () => {
-      Alert.alert("Error", "Payment failed. Please try again later.");
+    onError: (error) => {
+      console.error("Face payment error:", error);
+      setStatusModal({
+        visible: true,
+        type: "error",
+        title: "Error",
+        message:
+          error.response?.data?.message ||
+          "Payment failed. Please try again later.",
+        onClose: () => {
+          handleClearPress();
+          setFaceId("");
+        },
+      });
     },
   });
 
@@ -220,7 +242,7 @@ const Dashboard = () => {
     mutationKey: ["qrPayment"],
     mutationFn: (paymentData) => makeQRCodePayment(paymentData),
     onSuccess: (data) => {
-      // console.log(data);
+      console.log("QR payment success:", data);
       setStatusModal({
         visible: true,
         type: "success",
@@ -235,6 +257,7 @@ const Dashboard = () => {
       });
     },
     onError: (error) => {
+      console.error("QR payment error:", error);
       setStatusModal({
         visible: true,
         type: "error",
@@ -260,35 +283,48 @@ const Dashboard = () => {
     setShowFaceID(true);
   };
 
-  const handleFacePayment = () => {
-    console.log("Face payment initiated", faceId);
-    mutate();
-  };
+  useEffect(() => {
+    if (faceId) {
+      mutate();
+    }
+  }, [faceId]);
 
   const handleFaceIDSuccess = (data) => {
-    setFaceId(data.facialId);
-    setShowFaceID(false);
+    try {
+      if (!data || !data.facialId) {
+        throw new Error("Invalid face scan data");
+      }
 
-    handleFacePayment();
+      setFaceId(data.facialId);
+      setShowFaceID(false);
+    } catch (error) {
+      setStatusModal({
+        visible: true,
+        type: "error",
+        title: "Error",
+        message: error.message || "Face scan failed",
+        onClose: () => {
+          setFaceId("");
+          setShowFaceID(false);
+        },
+      });
+    }
   };
 
   const handleModalClose = () => {
     const callback = statusModal.onClose;
-    setStatusModal((prev) => ({
-      ...prev,
+    setStatusModal({
       visible: false,
+      type: "success",
+      title: "",
+      message: "",
       onClose: undefined,
-    }));
+    });
     if (callback) {
-      callback();
+      setTimeout(() => {
+        callback();
+      }, 100);
     }
-
-    Alert.alert("Success", "Face enrollment completed successfully!", [
-      {
-        text: "Continue",
-        onPress: handleFacePayment,
-      },
-    ]);
   };
 
   return (
@@ -317,12 +353,7 @@ const Dashboard = () => {
             {/* Amount input Card */}
             <View style={styles.balanceCard}>
               <Text style={styles.balanceLabel}>Enter Amount</Text>
-              <Animated.View
-                style={[
-                  styles.balanceRow,
-                  { transform: [{ scale: amountScale }] },
-                ]}
-              >
+              <View style={styles.balanceRow}>
                 <Text
                   style={[
                     styles.amountDisplay,
@@ -332,7 +363,7 @@ const Dashboard = () => {
                   {amount || "0.00"}
                 </Text>
                 <Text style={styles.currencyText}>KD</Text>
-              </Animated.View>
+              </View>
 
               {/* Keypad Component */}
               <Keypad
@@ -386,6 +417,13 @@ const Dashboard = () => {
         isVisible={showQRCode}
         onClose={() => setShowQRCode(false)}
         onSuccess={handleQRCodeSuccess}
+      />
+      <StatusModal
+        visible={statusModal.visible}
+        onClose={() => handleModalClose()}
+        type={statusModal.type}
+        title={statusModal.title}
+        message={statusModal.message}
       />
     </SafeAreaView>
   );

@@ -2,7 +2,7 @@ import instance from ".";
 import transactionApi from "./transactionApi";
 
 const makeFaceIdPayment = async (formData) => {
-  console.log(formData);
+  console.log("face id request: ", formData);
   try {
     const res = await transactionApi.post(
       "/transactions/business/transfer/faceid",
