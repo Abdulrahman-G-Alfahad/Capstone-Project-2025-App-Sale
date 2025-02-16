@@ -52,7 +52,8 @@ const Profile = () => {
         // console.log(id);
 
         const profile = await getProfile(id);
-        // console.log(profile.associate.address);
+        console.log("here");
+        console.log(profile);
         if (!profile) throw new Error("Failed to fetch profile");
 
         const business = await getBusinessProfile(id);

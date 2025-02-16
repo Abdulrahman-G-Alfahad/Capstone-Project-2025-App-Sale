@@ -39,17 +39,6 @@ const Dashboard = () => {
   const [sender, setSender] = useState("");
   const [qrAmount, setQrAmount] = useState("");
 
-<<<<<<< HEAD
-  const [statusModal, setStatusModal] = useState({
-    visible: false,
-    type: "success",
-    title: "",
-    message: "",
-    onClose: undefined,
-  });
-
-=======
->>>>>>> main
   const formData = useMemo(
     () => ({
       faceId: faceId,
@@ -61,14 +50,14 @@ const Dashboard = () => {
     [faceId, amount, receiver, associate]
   );
 
-  console.log(qrAmount);
+  // console.log(qrAmount);
 
   const qrData = useMemo(
     () => ({
       senderId: sender,
       receiverId: receiver,
       amount: qrAmount, // Use qrAmount instead of amount
-      method: "BARCODE",
+      method: "QR",
       associateId: associate,
     }),
     [sender, receiver, qrAmount, associate] // Update dependency array
@@ -161,7 +150,7 @@ const Dashboard = () => {
         throw new Error("Invalid amount in QR code");
       }
 
-      console.log(data.amount, "<------------");
+      // console.log(data.amount, "<------------");
       setSender(data.userId);
       setQrAmount(data.amount);
       setAmount(data.amount);
@@ -170,7 +159,7 @@ const Dashboard = () => {
         senderId: data.userId,
         receiverId: receiver,
         amount: data.amount,
-        method: "BARCODE",
+        method: "QR",
         associateId: associate,
       };
 
@@ -182,7 +171,7 @@ const Dashboard = () => {
         throw new Error("Missing payment information");
       }
 
-      makeQRPayment.mutate(qrData);
+      makeQRCode.mutate(qrData);
     } catch (error) {
       Alert.alert("Error", error.message);
     }
@@ -214,33 +203,6 @@ const Dashboard = () => {
   const { mutate } = useMutation({
     mutationKey: ["faceIdPayment"],
     mutationFn: () => makeFaceIdPayment(formData),
-<<<<<<< HEAD
-    onSuccess: () => {
-      setStatusModal({
-        visible: true,
-        type: "success",
-        title: "Success!",
-        message: "Payment completed successfully",
-        onClose: () => {
-          handleClearPress();
-          setFaceId("");
-        },
-      });
-    },
-    onError: (error) => {
-      setStatusModal({
-        visible: true,
-        type: "error",
-        title: "Error",
-        message:
-          error.response?.data?.message ||
-          "Payment failed. Please try again later.",
-        onClose: () => {
-          handleClearPress();
-          setFaceId("");
-        },
-      });
-=======
     onSuccess: (data) => {
       // console.log(data);
       Alert.alert("Success", "Payment completed successfully!", [
@@ -251,20 +213,14 @@ const Dashboard = () => {
     },
     onError: () => {
       Alert.alert("Error", "Payment failed. Please try again later.");
->>>>>>> main
     },
   });
 
-  const { mutate: makeQRPayment } = useMutation({
+  const makeQRCode = useMutation({
     mutationKey: ["qrPayment"],
     mutationFn: (paymentData) => makeQRCodePayment(paymentData),
-<<<<<<< HEAD
-    onSuccess: () => {
-=======
     onSuccess: (data) => {
-
-      console.log(data);
->>>>>>> main
+      // console.log(data);
       setStatusModal({
         visible: true,
         type: "success",
@@ -313,24 +269,7 @@ const Dashboard = () => {
     setFaceId(data.facialId);
     setShowFaceID(false);
 
-<<<<<<< HEAD
-    // Add a slight delay to ensure the FaceID modal is closed before showing the status modal
-    setTimeout(() => {
-      setStatusModal({
-        visible: true,
-        type: "success",
-        title: "Face Scan Complete",
-        message: "Processing payment...",
-      });
-
-      // Add a slight delay before initiating the payment
-      setTimeout(() => {
-        handleFacePayment();
-      }, 500);
-    }, 300);
-=======
     handleFacePayment();
->>>>>>> main
   };
 
   const handleModalClose = () => {

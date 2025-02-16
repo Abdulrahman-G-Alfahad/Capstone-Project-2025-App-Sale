@@ -1,12 +1,12 @@
 import axios from "axios";
 import { getToken } from "./storage";
 
-const instance = axios.create({
+const transactionApi = axios.create({
   // baseURL: "http://192.168.68.129:8080",
-  baseURL: "http://192.168.2.132:8081",
-  // baseURL: "http://192.168.2.132:8081",
+  baseURL: "http://192.168.2.132:8082",
+  // baseURL: "http://192.168.2.132:8080",
 });
-instance.interceptors.request.use(async (config) => {
+transactionApi.interceptors.request.use(async (config) => {
   const token = await getToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -14,4 +14,4 @@ instance.interceptors.request.use(async (config) => {
   return config;
 });
 
-export default instance;
+export default transactionApi;
