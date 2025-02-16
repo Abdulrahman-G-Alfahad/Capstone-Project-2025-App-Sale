@@ -1,5 +1,6 @@
 import { saveToken } from "./storage";
 import instance from ".";
+import transactionApi from "./transactionApi";
 
 const login = async (userInfo) => {
   // const { accountType, setAccountType } = useContext(UserContext);
@@ -9,8 +10,10 @@ const login = async (userInfo) => {
     const token = res.data.token;
     if (token) {
       saveToken(token);
-      //   console.log(jwtDecode(token));
+      //   console.log(token);
     }
+
+    // console.log("first");
 
     return res.data;
   } catch (error) {
@@ -19,10 +22,10 @@ const login = async (userInfo) => {
 };
 
 const getProfile = async (id) => {
-  // console.log(id);
+  console.log(id);
   try {
     const res = await instance.get(`/business/associate/${id}`);
-    // console.log(res)
+    console.log(res.data);
     return res.data;
   } catch (error) {
     throw error;
@@ -30,10 +33,10 @@ const getProfile = async (id) => {
 };
 
 const getBusinessProfile = async (id) => {
-  //   console.log(id);
+  console.log(id);
   try {
     const res = await instance.get(`/business/associate/${id}/business`);
-    // console.log(res.data.business.id);
+    console.log(res.data);
 
     return res.data;
   } catch (error) {

@@ -18,7 +18,7 @@ const QRCode = ({ isVisible, onClose, onSuccess }) => {
       if (scanned || !data) return;
       setScanned(true);
 
-      console.log("Raw QR Data:", data);
+      // console.log("Raw QR Data:", data);
       const qrData = JSON.parse(data);
       console.log("Parsed QR Data:", qrData);
 
