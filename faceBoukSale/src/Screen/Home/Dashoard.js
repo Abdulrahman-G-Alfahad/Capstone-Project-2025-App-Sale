@@ -153,36 +153,51 @@ const Dashboard = () => {
     ]).start();
   };
 
+  const validateQRData = (data) => {
+    if (!data.senderId) {
+      throw new Error("Sender ID is missing");
+    }
+    if (!data.amount || parseFloat(data.amount) <= 0) {
+      throw new Error("Invalid amount");
+    }
+    if (!data.receiverId) {
+      throw new Error("Receiver ID is missing");
+    }
+    return true;
+  };
+
   const handleQRCodeSuccess = (data) => {
     try {
-      if (!data.amount || parseFloat(data.amount) <= 0) {
-        throw new Error("Invalid amount in QR code");
-      }
-
-      console.log(data.amount, "<------------");
+      // Set states first
       setSender(data.userId);
       setQrAmount(data.amount);
       setAmount(data.amount);
 
+      // Construct payment data
       const paymentData = {
         senderId: data.userId,
         receiverId: receiver,
         amount: data.amount,
-        method: "BARCODE",
+        method: "QR",
         associateId: associate,
       };
 
-      if (
-        !paymentData.senderId ||
-        !paymentData.receiverId ||
-        !paymentData.associateId
-      ) {
-        throw new Error("Missing payment information");
+      // Validate before making API call
+      if (validateQRData(paymentData)) {
+        makeQRCode.mutate(paymentData);
       }
-
-      makeQRCode.mutate(qrData);
     } catch (error) {
-      Alert.alert("Error", error.message);
+      setStatusModal({
+        visible: true,
+        type: "error",
+        title: "Error",
+        message: error.message,
+        onClose: () => {
+          setQrAmount("");
+          setSender("");
+          setShowQRCode(false);
+        },
+      });
     }
   };
 
@@ -240,7 +255,13 @@ const Dashboard = () => {
 
   const makeQRCode = useMutation({
     mutationKey: ["qrPayment"],
-    mutationFn: (paymentData) => makeQRCodePayment(paymentData),
+    mutationFn: (paymentData) => {
+      // Final validation before API call
+      if (!validateQRData(paymentData)) {
+        throw new Error("Invalid payment data");
+      }
+      return makeQRCodePayment(paymentData);
+    },
     onSuccess: (data) => {
       console.log("QR payment success:", data);
       setStatusModal({

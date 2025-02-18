@@ -17,8 +17,8 @@ const makeFaceIdPayment = async (formData) => {
 };
 
 const makeQRCodePayment = async (qrData) => {
-  console.log("first");
-  console.log(qrData);
+  // console.log("first");
+  console.log("--------------->", qrData);
   //   console.log(qrData, "QRCode Payment -------------------");
   try {
     const res = await transactionApi.post(
